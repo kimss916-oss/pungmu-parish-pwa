@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#eef6fa">
+<title>마니피캇 성가대 출석부</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;background:#eef6fa;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans KR",sans-serif}
+#attendanceApp{position:fixed;inset:0;width:100%;height:100%;border:0;background:#fff}
+#loading{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#eef6fa;color:#35515d;font-weight:700;z-index:2}
+</style>
+</head>
+<body>
+<div id="loading">출석부를 불러오는 중입니다...</div>
+<iframe id="attendanceApp" allow="clipboard-write"></iframe>
+<script>
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzwqYby2FgFQ6exPa1PZNZnahEF4dHqe3s5WKGJWDkkH8SG-UzHVKXKjJCwTESGdlPC/exec';
+const params = new URLSearchParams(location.search);
+const target = new URL(APPS_SCRIPT_URL);
+
+// GitHub 주소로 받은 파라미터를 출석부 Apps Script에 그대로 전달
+for (const [key, value] of params.entries()) {
+  target.searchParams.set(key, value);
+}
+
+const frame = document.getElementById('attendanceApp');
+frame.src = target.toString();
+frame.addEventListener('load', () => {
+  document.getElementById('loading').style.display = 'none';
+});
+</script>
+</body>
+</html>
