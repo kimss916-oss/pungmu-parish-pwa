@@ -1,16 +1,31 @@
 {
+  "id": "/pungmu-parish-pwa/",
   "name": "천주교 풍무동성당",
   "short_name": "풍무동성당",
   "description": "천주교 풍무동성당 통합 앱",
   "lang": "ko-KR",
-  "start_url": "./",
-  "scope": "./",
+  "start_url": "/pungmu-parish-pwa/?source=pwa",
+  "scope": "/pungmu-parish-pwa/",
   "display": "standalone",
+  "display_override": [
+    "standalone"
+  ],
   "orientation": "portrait-primary",
   "background_color": "#eef6fa",
   "theme_color": "#eef6fa",
+  "prefer_related_applications": false,
   "icons": [
-    {"src":"./icons/icon-192.png","sizes":"192x192","type":"image/png","purpose":"any maskable"},
-    {"src":"./icons/icon-512.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}
+    {
+      "src": "/pungmu-parish-pwa/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pungmu-parish-pwa/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
   ]
 }
