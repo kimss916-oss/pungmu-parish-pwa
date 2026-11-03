@@ -2,47 +2,147 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#eef6fa">
-  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="application-name" content="풍무동성당">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="풍무동성당">
-  <meta name="application-name" content="풍무동성당">
   <title>풍무동성당</title>
   <link rel="manifest" href="/pungmu-parish-pwa/manifest.webmanifest">
-  <link rel="icon" type="image/png" sizes="192x192" href="/pungmu-parish-pwa/icons/icon-192.png">
+  <link rel="icon" href="/pungmu-parish-pwa/icons/icon-192.png">
   <link rel="apple-touch-icon" href="/pungmu-parish-pwa/icons/icon-192.png">
   <style>
-    html,body{width:100%;height:100%;margin:0;background:#eef6fa;overflow:hidden}
+    *{box-sizing:border-box}
+    html,body{margin:0;width:100%;height:100%;background:#eef6fa;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans KR",sans-serif}
     #app{position:fixed;inset:0;width:100%;height:100%;border:0;background:#fff}
-    #loading{position:fixed;inset:0;display:grid;place-items:center;background:#eef6fa;color:#29485b;
-      font-family:system-ui,-apple-system,"Noto Sans KR",sans-serif;font-weight:700;z-index:2}
+    #loading{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#eef6fa;color:#315466;font-weight:700;z-index:2}
+    #installBar{
+      position:fixed;left:12px;right:12px;bottom:calc(14px + env(safe-area-inset-bottom));
+      z-index:20;display:none;align-items:center;gap:10px;padding:11px 12px;
+      background:rgba(255,255,255,.97);border:1px solid #d9e5ea;border-radius:16px;
+      box-shadow:0 5px 20px rgba(0,0,0,.14)
+    }
+    #installBar img{width:42px;height:42px;object-fit:contain;flex:0 0 42px}
+    #installText{min-width:0;flex:1}
+    #installText strong{display:block;font-size:14px;color:#20343e}
+    #installText span{display:block;margin-top:2px;font-size:12px;color:#65777f;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    #installBtn{border:0;border-radius:10px;padding:10px 12px;background:#356b7d;color:#fff;font-weight:800;white-space:nowrap}
+    #closeInstall{border:0;background:transparent;color:#7a8a91;font-size:22px;line-height:1;padding:4px}
+    #guide{
+      position:fixed;inset:0;z-index:30;display:none;align-items:center;justify-content:center;
+      padding:22px;background:rgba(0,0,0,.38)
+    }
+    #guideCard{width:min(360px,100%);background:#fff;border-radius:20px;padding:22px;box-shadow:0 12px 36px rgba(0,0,0,.2)}
+    #guideCard h2{margin:0 0 10px;font-size:20px;color:#20343e}
+    #guideCard p{margin:8px 0;color:#52646c;line-height:1.55;font-size:14px}
+    #guideCard button{width:100%;margin-top:14px;border:0;border-radius:12px;padding:12px;background:#356b7d;color:#fff;font-weight:800}
   </style>
 </head>
 <body>
   <div id="loading">풍무동성당</div>
-  <iframe id="app" title="천주교 풍무동성당"
-    allow="clipboard-read; clipboard-write"
-    referrerpolicy="strict-origin-when-cross-origin"></iframe>
-  <script>
-    const APP_URL='https://script.google.com/macros/s/AKfycbzkWUR-IBm2mFR0Kc8u2FzlZf_wuy4nm5Asj6O85pAcAUU0vHKpkmYvzvJJu2nwyjWI/exec';
-    const frame=document.getElementById('app');
-    frame.src=APP_URL;
-    frame.addEventListener('load',()=>document.getElementById('loading').style.display='none');
+  <iframe id="app" src="https://script.google.com/macros/s/AKfycbzkWUR-IBm2mFR0Kc8u2FzlZf_wuy4nm5Asj6O85pAcAUU0vHKpkmYvzvJJu2nwyjWI/exec" allow="clipboard-write"></iframe>
 
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', async () => {
-        try {
-          const reg = await navigator.serviceWorker.register('/pungmu-parish-pwa/sw.js', {
-            scope: '/pungmu-parish-pwa/'
-          });
-          reg.update();
-        } catch (e) {
-          console.error('service worker registration failed', e);
-        }
-      });
+  <div id="installBar">
+    <img src="/pungmu-parish-pwa/icons/icon-192.png" alt="">
+    <div id="installText">
+      <strong>풍무동성당 앱 설치</strong>
+      <span>설치하면 홈 화면에서 바로 이용할 수 있습니다.</span>
+    </div>
+    <button id="installBtn" type="button">설치</button>
+    <button id="closeInstall" type="button" aria-label="닫기">×</button>
+  </div>
+
+  <div id="guide">
+    <div id="guideCard">
+      <h2>풍무동성당 앱 설치</h2>
+      <p id="guideText"></p>
+      <button id="guideClose" type="button">확인</button>
+    </div>
+  </div>
+
+<script>
+  const app = document.getElementById('app');
+  const loading = document.getElementById('loading');
+  const installBar = document.getElementById('installBar');
+  const installBtn = document.getElementById('installBtn');
+  const closeInstall = document.getElementById('closeInstall');
+  const guide = document.getElementById('guide');
+  const guideText = document.getElementById('guideText');
+  const guideClose = document.getElementById('guideClose');
+  let deferredPrompt = null;
+
+  app.addEventListener('load', () => loading.style.display = 'none');
+
+  function isStandalone() {
+    return window.matchMedia('(display-mode: standalone)').matches ||
+           window.navigator.standalone === true ||
+           document.referrer.startsWith('android-app://');
+  }
+
+  function isAndroid() { return /Android/i.test(navigator.userAgent); }
+  function isSamsung() { return /SamsungBrowser/i.test(navigator.userAgent); }
+  function isChrome() { return /Chrome/i.test(navigator.userAgent) && !isSamsung(); }
+
+  function dismissedRecently() {
+    const t = Number(localStorage.getItem('installGuideDismissedAt') || 0);
+    return t && (Date.now() - t < 7 * 24 * 60 * 60 * 1000);
+  }
+
+  function showBar() {
+    if (!isStandalone() && !dismissedRecently()) installBar.style.display = 'flex';
+  }
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    showBar();
+  });
+
+  window.addEventListener('appinstalled', () => {
+    deferredPrompt = null;
+    installBar.style.display = 'none';
+    localStorage.removeItem('installGuideDismissedAt');
+  });
+
+  installBtn.addEventListener('click', async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      await deferredPrompt.userChoice;
+      deferredPrompt = null;
+      installBar.style.display = 'none';
+      return;
     }
-  </script>
+
+    if (isSamsung()) {
+      guideText.innerHTML = '삼성 인터넷 메뉴에서 <b>현재 페이지 추가</b> 또는 <b>앱 설치</b>를 선택해 주세요.<br><br>주소창 옆에 풍무동성당 아이콘이 보이면 그 아이콘을 눌러 설치할 수도 있습니다.';
+    } else if (isChrome()) {
+      guideText.innerHTML = 'Chrome 오른쪽 위 <b>⋮</b> → <b>설치 및 바로가기 만들기</b> → <b>앱 설치</b>를 선택해 주세요.';
+    } else {
+      guideText.innerHTML = '브라우저 메뉴에서 <b>앱 설치</b> 또는 <b>홈 화면에 추가</b>를 선택해 주세요.';
+    }
+    guide.style.display = 'flex';
+  });
+
+  closeInstall.addEventListener('click', () => {
+    installBar.style.display = 'none';
+    localStorage.setItem('installGuideDismissedAt', Date.now());
+  });
+  guideClose.addEventListener('click', () => guide.style.display = 'none');
+
+  // beforeinstallprompt를 제공하지 않는 브라우저에서도 초보자용 안내를 노출
+  window.addEventListener('load', () => {
+    if (!isStandalone() && isAndroid() && !dismissedRecently()) {
+      setTimeout(showBar, 1200);
+    }
+  });
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/pungmu-parish-pwa/sw.js', {scope:'/pungmu-parish-pwa/'})
+        .catch(console.error);
+    });
+  }
+</script>
 </body>
 </html>
