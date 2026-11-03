@@ -1,15 +1,12 @@
-풍무동성당 PWA V1.2
+풍무동성당 PWA V1.3
 
-변경사항
-- V1.1 설치형 PWA 구조 유지
-- 일반 사용자를 위한 '풍무동성당 앱 설치' 안내 추가
-- Chrome: 설치 가능 시 페이지의 설치 버튼으로 설치창 호출
-- Samsung Internet 등: 설치 버튼 호출이 불가능한 경우 브라우저별 간단 안내 표시
-- 이미 독립 앱(standalone)으로 실행 중이면 설치 안내 표시 안 함
-- 안내를 닫으면 7일 동안 다시 표시하지 않음
-- Apps Script 로그인/세션 구조는 변경하지 않음
+- V1.1 안정 구조 유지
+- 일반 브라우저에서는 설치 안내바를 HTML에서 즉시 표시
+- 설치된 standalone 앱에서는 설치 안내바 자동 숨김
+- 7일 숨김 기능 제거
+- Chrome: beforeinstallprompt가 있으면 설치창 직접 호출
+- Samsung Internet: 직접 호출이 안 되면 설치 위치 안내
+- Service Worker 캐시명을 v4로 변경하여 이전 V1.2 캐시 갱신
 
-적용
-1. 이 폴더의 index.html, manifest.webmanifest, sw.js를 GitHub 저장소 루트에 덮어쓰기
-2. icons 폴더에는 기존 V1.1의 풍무동성당 icon-192.png / icon-512.png 유지
-3. Commit to main → Push origin
+적용:
+저장소 루트에 전체 덮어쓰기 → Commit → Push
