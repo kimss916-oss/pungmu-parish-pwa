@@ -28,6 +28,11 @@ html,body{margin:0;width:100%;height:100%;background:#eef6fa;font-family:-apple-
 #guideBox h3{margin:0 0 10px;color:#20343e;font-size:19px}
 #guideBox p{margin:0;color:#52646c;font-size:14px;line-height:1.7}
 #guideBox button{width:100%;margin-top:16px;border:0;border-radius:11px;padding:12px;background:#356b7d;color:#fff;font-weight:800}
+
+#pushBar{position:fixed;z-index:100001;left:10px;right:10px;bottom:calc(12px + env(safe-area-inset-bottom));display:none;align-items:center;gap:10px;padding:13px;background:white;border:1px solid #cbdde2;border-radius:14px;box-shadow:0 5px 20px rgba(0,0,0,.18)}
+#pushBar span{flex:1;font-size:13px;color:#20343e}
+#pushEnable{background:#356b7d;color:#fff;border:0;border-radius:9px;padding:10px;font-weight:700}
+#pushDismiss{background:transparent;border:0;font-size:22px;color:#64757d}
 </style>
 </head>
 <body>
@@ -37,7 +42,10 @@ html,body{margin:0;width:100%;height:100%;background:#eef6fa;font-family:-apple-
  <img src="/pungmu-parish-pwa/icons/icon-192.png" alt="">
  <div id="copy"><b id="barTitle">풍무동성당 앱 설치</b><small id="barText">홈 화면에서 바로 이용하세요.</small></div>
  <button id="action" type="button">설치</button>
+ <button id="installDismiss" type="button" aria-label="설치 안내 닫기">×</button>
 </div>
+
+<div id="pushBar"><span>관리자 푸시 알림을 이 기기에서 받으시겠습니까?</span><button id="pushEnable" type="button">알림 받기</button><button id="pushDismiss" type="button" aria-label="닫기">×</button></div>
 
 <div id="guide"><div id="guideBox">
  <h3 id="guideTitle">풍무동성당 앱 설치</h3>
@@ -45,6 +53,8 @@ html,body{margin:0;width:100%;height:100%;background:#eef6fa;font-family:-apple-
  <button id="guideClose" type="button">확인</button>
 </div></div>
 
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging-compat.js"></script>
 <script>
 let deferredPrompt=null;
 const ua=navigator.userAgent;
@@ -121,6 +131,70 @@ document.getElementById('guideClose').onclick=()=>guide.style.display='none';
 if('serviceWorker' in navigator){
  navigator.serviceWorker.register('/pungmu-parish-pwa/sw.js',{scope:'/pungmu-parish-pwa/'}).catch(()=>{});
 }
+
+// PUNGMU PUSH: GitHub shell <-> GAS iframe bridge
+const PUSH_CHANNEL='PUNGMU_PUSH_V1';
+const PUSH_VAPID='BNoYNNbya-SKTzuSCHs_qsHMpZW-jrfkssi2Y_JmNEynzfjqqTvBi0vvtYSIUP0WLF4tZTglVBpxdzQIR_61Cs0';
+const PUSH_CONFIG={apiKey:'AIzaSyABX1iZ5Kq7zwcr22faMapM5IUhP86amNo',authDomain:'pungmu-parish-pwa.firebaseapp.com',projectId:'pungmu-parish-pwa',storageBucket:'pungmu-parish-pwa.firebasestorage.app',messagingSenderId:'391478026636',appId:'1:391478026636:web:5cc77ea9ce109b565eb6a9'};
+const pushBar=document.getElementById('pushBar');
+const pushEnable=document.getElementById('pushEnable');
+const pushDismiss=document.getElementById('pushDismiss');
+const appFrame=document.getElementById('app');
+let pushAdmin=false, pushBusy=false, pushMessaging=null, pushSaved=false, pushFrameOrigin=null;
+const PUSH_DISMISS_KEY='pungmu-push-dismissed-session';
+function pushHide(){pushBar.style.display='none';if(!standalone()){try{if(localStorage.getItem(INSTALL_DISMISSED_KEY)!=='1')bar.style.display='flex';}catch(e){bar.style.display='flex';}}}
+function pushShow(){
+ if(!pushAdmin||pushSaved||pushBusy||!('Notification' in window)||Notification.permission==='denied')return;
+ try{if(sessionStorage.getItem(PUSH_DISMISS_KEY)==='1')return;}catch(e){}
+ bar.style.display='none';
+ pushBar.style.display='flex';
+}
+function pushInit(){
+ if(pushMessaging)return pushMessaging;
+ if(!window.firebase||!firebase.messaging||!firebase.messaging.isSupported())throw new Error('이 브라우저는 FCM을 지원하지 않습니다.');
+ if(!firebase.apps.length)firebase.initializeApp(PUSH_CONFIG);
+ pushMessaging=firebase.messaging();
+ pushMessaging.onMessage(payload=>{
+  // Foreground messages may not display system notifications automatically.
+  console.info('[PUSH] 포그라운드 메시지 수신',payload?.messageId||'');
+ });
+ return pushMessaging;
+}
+async function pushRegister(){
+ if(!pushAdmin||pushBusy)return;
+ pushBusy=true;pushHide();
+ try{
+  if(!('serviceWorker' in navigator)||!('Notification' in window))throw new Error('이 기기는 웹 푸시를 지원하지 않습니다.');
+  if(Notification.permission!=='granted'){
+   const permission=await Notification.requestPermission();
+   if(permission!=='granted')throw new Error('알림 권한이 허용되지 않았습니다.');
+  }
+  const registration=await navigator.serviceWorker.register('/pungmu-parish-pwa/sw.js',{scope:'/pungmu-parish-pwa/'});
+  const messaging=pushInit();
+  const token=await messaging.getToken({vapidKey:PUSH_VAPID,serviceWorkerRegistration:registration});
+  if(!token)throw new Error('FCM 토큰을 발급받지 못했습니다.');
+  appFrame.contentWindow.postMessage({channel:PUSH_CHANNEL,type:'REGISTER_TOKEN',token},pushFrameOrigin||'*');
+  // SAVE_RESULT response confirms storage; do not mark registered before then.
+ }catch(err){console.error('[PUSH] 등록 실패',err);alert('푸시 등록 실패: '+(err?.message||err));}
+ finally{pushBusy=false;}
+}
+pushEnable.addEventListener('click',pushRegister);
+pushDismiss.addEventListener('click',()=>{try{sessionStorage.setItem(PUSH_DISMISS_KEY,'1')}catch(e){}pushHide()});
+window.addEventListener('message',event=>{
+ if(event.source!==appFrame.contentWindow||!event.data||event.data.channel!==PUSH_CHANNEL)return;
+ const d=event.data;
+ if(d.type==='ADMIN_READY'){
+  pushFrameOrigin=event.origin;
+  pushAdmin=true;pushSaved=false;
+  if('Notification' in window&&Notification.permission==='granted')pushRegister();
+  else pushShow();
+ }else if(d.type==='ADMIN_LOGOUT'){
+  pushAdmin=false;pushSaved=false;pushHide();
+ }else if(d.type==='SAVE_RESULT'){
+  if(d.ok){pushSaved=true;pushHide();console.info('[PUSH] 기기 등록 완료');}
+  else {console.warn('[PUSH] 기기 저장 실패',d.message||'');pushShow();}
+ }
+});
 </script>
 </body>
 </html>
