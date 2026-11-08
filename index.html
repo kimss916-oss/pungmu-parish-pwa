@@ -6,6 +6,7 @@
 <meta name="theme-color" content="#eef6fa">
 <meta name="application-name" content="풍무동성당">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="풍무동성당">
 <title>풍무동성당</title>
@@ -141,6 +142,7 @@ const pushEnable=document.getElementById('pushEnable');
 const pushDismiss=document.getElementById('pushDismiss');
 const appFrame=document.getElementById('app');
 let pushAdmin=false, pushBusy=false, pushMessaging=null, pushSaved=false, pushFrameOrigin=null;
+let pushSaveTimer=null, pushLastToken=null;
 const PUSH_DISMISS_KEY='pungmu-push-dismissed-session';
 function pushHide(){pushBar.style.display='none';if(!standalone()){try{if(localStorage.getItem(INSTALL_DISMISSED_KEY)!=='1')bar.style.display='flex';}catch(e){bar.style.display='flex';}}}
 function pushShow(){
@@ -157,6 +159,8 @@ function pushInit(){
  pushMessaging.onMessage(payload=>{
   // Foreground messages may not display system notifications automatically.
   console.info('[PUSH] 포그라운드 메시지 수신',payload?.messageId||'');
+  const n=payload?.notification||{};
+  navigator.serviceWorker.ready.then(reg=>reg.showNotification(n.title||'풍무동성당 알림',{body:n.body||'새로운 알림이 도착했습니다.',icon:'/pungmu-parish-pwa/icons/icon-192.png',data:{url:payload?.fcmOptions?.link||'/pungmu-parish-pwa/'},tag:payload?.messageId||'pungmu-admin-push'})).catch(e=>console.warn('[PUSH] 화면 알림 표시 실패',e));
  });
  return pushMessaging;
 }
@@ -184,13 +188,16 @@ window.addEventListener('message',event=>{
  if(event.source!==appFrame.contentWindow||!event.data||event.data.channel!==PUSH_CHANNEL)return;
  const d=event.data;
  if(d.type==='ADMIN_READY'){
+  console.info('[PUSH] ADMIN_READY 수신',event.origin);
   pushFrameOrigin=event.origin;
   pushAdmin=true;pushSaved=false;
   if('Notification' in window&&Notification.permission==='granted')pushRegister();
   else pushShow();
  }else if(d.type==='ADMIN_LOGOUT'){
-  pushAdmin=false;pushSaved=false;pushHide();
+  console.info('[PUSH] ADMIN_LOGOUT 수신');
+  clearTimeout(pushSaveTimer);pushAdmin=false;pushSaved=false;pushHide();
  }else if(d.type==='SAVE_RESULT'){
+  clearTimeout(pushSaveTimer);
   if(d.ok){pushSaved=true;pushHide();console.info('[PUSH] 기기 등록 완료');}
   else {console.warn('[PUSH] 기기 저장 실패',d.message||'');pushShow();}
  }
