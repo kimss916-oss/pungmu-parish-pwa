@@ -30,7 +30,7 @@ html,body{margin:0;width:100%;height:100%;background:#eef6fa;font-family:-apple-
 </style>
 </head>
 <body>
-<div style="position:fixed;z-index:99999;right:8px;top:8px;background:#fff3cd;border:1px solid #dfbd67;border-radius:7px;padding:4px 9px;font:12px sans-serif;pointer-events:none">FCM 테스트 전용</div>
+<div style="position:fixed;z-index:99999;right:8px;top:8px;background:#fff3cd;border:1px solid #dfbd67;border-radius:7px;padding:4px 9px;font:12px sans-serif;pointer-events:none">FCM 테스트 전용 V2</div>
 <iframe id="app" src="https://script.google.com/macros/s/AKfycbxtlwzJIcZZCrVmbtFBUzei1_Fpm0T1lqHTKdPxCqfNiw5fGrd5UplAJHzrctmKa4wj/exec" allow="clipboard-write"></iframe>
 
 <div id="pushPanel" hidden style="position:fixed;z-index:99998;right:10px;bottom:calc(12px + env(safe-area-inset-bottom));max-width:min(330px,calc(100vw - 20px));background:white;border:1px solid #ccd9d9;border-radius:12px;padding:12px;box-shadow:0 4px 16px #0003;font-size:13px"><strong>관리자 푸시 알림</strong><button id="pushEnable" type="button" style="display:block;margin:7px 0;padding:10px;border:0;border-radius:8px;background:#176e61;color:white;font-weight:bold">이 기기에서 알림 받기</button><div id="pushStatus" role="status">관리자만 등록할 수 있습니다.</div></div>
@@ -112,7 +112,7 @@ action.addEventListener('click',async()=>{
 document.getElementById('guideClose').onclick=()=>guide.style.display='none';
 
 if('serviceWorker' in navigator){
- navigator.serviceWorker.register('/pungmu-parish-pwa/sw.js',{scope:'/pungmu-parish-pwa/'}).catch(()=>{});
+ navigator.serviceWorker.register('/pungmu-parish-pwa/pungmu-fcm-test-worker.js',{scope:'/pungmu-parish-pwa/fcm-test-scope/'}).catch(()=>{});
 }
 </script>
 <script type="module">
@@ -142,7 +142,7 @@ pushButton.addEventListener('click',async()=>{
   if(!('Notification' in window)||!('serviceWorker' in navigator)||!(await isSupported()))throw Error('현재 브라우저에서 푸시 알림을 지원하지 않습니다.');
   const permission=await Notification.requestPermission();
   if(permission!=='granted')throw Error('알림 권한이 허용되지 않았습니다.');
-  const reg=await navigator.serviceWorker.register('/pungmu-parish-pwa/sw.js',{scope:'/pungmu-parish-pwa/'});
+  const reg=await navigator.serviceWorker.register('/pungmu-parish-pwa/pungmu-fcm-test-worker.js',{scope:'/pungmu-parish-pwa/fcm-test-scope/'});
   const token=await getToken(getMessaging(initializeApp(config)),{vapidKey,serviceWorkerRegistration:reg});
   if(!token)throw Error('FCM 토큰 발급 실패');
   appMessageWindow.postMessage({channel:'PUNGMU_PUSH_V1',type:'REGISTER_TOKEN',token},iframeOrigin);
