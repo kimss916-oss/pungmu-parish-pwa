@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>풍무동성당 푸시 연결 진단</title><style>body{margin:0;font-family:system-ui,sans-serif;background:#eef6fa}header{padding:12px;background:#fff;border-bottom:1px solid #ddd}#status{font-weight:700}#log{font-size:12px;white-space:pre-wrap;max-height:120px;overflow:auto}iframe{display:block;width:100%;height:calc(100dvh - 190px);border:0;background:#fff}button{padding:8px}</style></head><body>
+<header><b>푸시 연결 진단 (등록·저장 없음)</b><p id="status">관리자 메시지 대기 중</p><div id="log">진단 페이지 로드됨</div><button onclick="location.reload()">다시 확인</button></header>
+<iframe id="app" src="https://script.google.com/macros/s/AKfycbzkWUR-IBm2mFR0Kc8u2FzlZf_wuy4nm5Asj6O85pAcAUU0vHKpkmYvzvJJu2nwyjWI/exec" allow="clipboard-write"></iframe>
+<script>
+const log=document.getElementById('log'),status=document.getElementById('status'),app=document.getElementById('app');
+window.addEventListener('message',e=>{
+ if(!e.data||e.data.channel!=='PUNGMU_PUSH_V1')return;
+ const allowed=e.origin==='https://script.google.com'||/^https:\/\/[a-z0-9-]+\.googleusercontent\.com$/.test(e.origin);
+ const direct=e.source===app.contentWindow;
+ const type=String(e.data.type||'unknown');
+ log.textContent+='\n메시지: '+type+' | 출처 검증: '+(allowed?'통과':'불일치')+' | 직접 프레임: '+(direct?'예':'아니요');
+ if(allowed&&direct){status.textContent=type==='ADMIN_READY'?'관리자 메시지 정상 수신':type==='ADMIN_LOGOUT'?'로그아웃 메시지 수신':'메시지 수신: '+type;}
+ else status.textContent='메시지가 도착했으나 연결 조건 불일치';
+});
+</script></body></html>
