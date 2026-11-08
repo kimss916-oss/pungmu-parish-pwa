@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#eef6fa">
+<meta name="application-name" content="풍무동성당">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="풍무동성당">
+<title>풍무동성당</title>
+<link rel="manifest" href="/pungmu-parish-pwa/manifest.webmanifest">
+<link rel="icon" href="/pungmu-parish-pwa/icons/icon-192.png">
+<link rel="apple-touch-icon" href="/pungmu-parish-pwa/icons/icon-192.png">
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;background:#eef6fa;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans KR",sans-serif}
+#app{position:fixed;inset:0;width:100%;height:100%;border:0;background:#fff}
+#installBar{position:fixed;z-index:99999;left:10px;right:10px;bottom:calc(12px + env(safe-area-inset-bottom));display:flex;align-items:center;gap:9px;padding:10px 11px;background:#fff;border:1px solid #d6e2e7;border-radius:15px;box-shadow:0 5px 20px rgba(0,0,0,.18)}
+#installBar img{width:40px;height:40px;object-fit:contain}
+#copy{flex:1;min-width:0}
+#copy b{display:block;font-size:14px;color:#20343e}
+#copy small{display:block;margin-top:2px;font-size:11px;color:#65777f;line-height:1.35}
+#action{border:0;border-radius:10px;padding:10px 13px;background:#356b7d;color:#fff;font-weight:800;white-space:nowrap}
+#guide{position:fixed;z-index:100000;inset:0;display:none;align-items:center;justify-content:center;padding:22px;background:rgba(0,0,0,.38)}
+#guideBox{width:min(370px,100%);background:#fff;border-radius:18px;padding:21px;box-shadow:0 12px 35px rgba(0,0,0,.25)}
+#guideBox h3{margin:0 0 10px;color:#20343e;font-size:19px}
+#guideBox p{margin:0;color:#52646c;font-size:14px;line-height:1.7}
+#guideBox button{width:100%;margin-top:16px;border:0;border-radius:11px;padding:12px;background:#356b7d;color:#fff;font-weight:800}
+</style>
+</head>
+<body>
+<div style="position:fixed;z-index:99999;right:8px;top:8px;background:#fff3cd;border:1px solid #dfbd67;border-radius:7px;padding:4px 9px;font:12px sans-serif;pointer-events:none">FCM 테스트 전용</div>
+<iframe id="app" src="https://script.google.com/macros/s/AKfycbxtlwzJIcZZCrVmbtFBUzei1_Fpm0T1lqHTKdPxCqfNiw5fGrd5UplAJHzrctmKa4wj/exec" allow="clipboard-write"></iframe>
+
+<div id="pushPanel" hidden style="position:fixed;z-index:99998;right:10px;bottom:calc(12px + env(safe-area-inset-bottom));max-width:min(330px,calc(100vw - 20px));background:white;border:1px solid #ccd9d9;border-radius:12px;padding:12px;box-shadow:0 4px 16px #0003;font-size:13px"><strong>관리자 푸시 알림</strong><button id="pushEnable" type="button" style="display:block;margin:7px 0;padding:10px;border:0;border-radius:8px;background:#176e61;color:white;font-weight:bold">이 기기에서 알림 받기</button><div id="pushStatus" role="status">관리자만 등록할 수 있습니다.</div></div>
+<div id="installBar">
+ <img src="/pungmu-parish-pwa/icons/icon-192.png" alt="">
+ <div id="copy"><b id="barTitle">풍무동성당 앱 설치</b><small id="barText">홈 화면에서 바로 이용하세요.</small></div>
+ <button id="action" type="button">설치</button>
+</div>
+
+<div id="guide"><div id="guideBox">
+ <h3 id="guideTitle">풍무동성당 앱 설치</h3>
+ <p id="guideText"></p>
+ <button id="guideClose" type="button">확인</button>
+</div></div>
+
+<script>
+let deferredPrompt=null;
+const ua=navigator.userAgent;
+const isIOS=/iPad|iPhone|iPod/.test(ua) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
+const isSamsung=/SamsungBrowser/i.test(ua);
+const isAndroid=/Android/i.test(ua);
+const isChromeAndroid=isAndroid && /Chrome/i.test(ua) && !isSamsung;
+const bar=document.getElementById('installBar');
+const action=document.getElementById('action');
+const barText=document.getElementById('barText');
+const guide=document.getElementById('guide');
+const guideText=document.getElementById('guideText');
+
+function standalone(){
+ return window.matchMedia('(display-mode: standalone)').matches ||
+        navigator.standalone===true ||
+        document.referrer.startsWith('android-app://');
+}
+if(standalone()) bar.style.display='none';
+
+if(isIOS){
+ barText.textContent='iPhone은 Safari에서 홈 화면에 추가합니다.';
+ action.textContent='설치 안내';
+} else if(isSamsung){
+ barText.textContent='안전한 설치를 위해 Chrome 사용을 권장합니다.';
+ action.textContent='설치 안내';
+} else if(isChromeAndroid){
+ barText.textContent='Chrome에서 안전하게 앱으로 설치할 수 있습니다.';
+ action.textContent='설치';
+} else if(isAndroid){
+ barText.textContent='Chrome에서 열어 설치하는 것을 권장합니다.';
+ action.textContent='설치 안내';
+} else {
+ barText.textContent='휴대폰에서 앱으로 설치할 수 있습니다.';
+ action.textContent='설치 안내';
+}
+
+window.addEventListener('beforeinstallprompt',e=>{
+ e.preventDefault();
+ deferredPrompt=e;
+});
+window.addEventListener('appinstalled',()=>{bar.style.display='none';deferredPrompt=null;});
+
+action.addEventListener('click',async()=>{
+ if(isChromeAndroid && deferredPrompt){
+   deferredPrompt.prompt();
+   await deferredPrompt.userChoice;
+   deferredPrompt=null;
+   return;
+ }
+ if(isIOS){
+   guideText.innerHTML='① 이 주소를 <b>Safari</b>에서 여세요.<br>② Safari의 <b>공유 버튼</b>을 누르세요.<br>③ <b>홈 화면에 추가</b>를 선택하세요.<br>④ <b>추가</b>를 누르면 풍무동성당 아이콘이 생성됩니다.';
+ } else if(isSamsung){
+   guideText.innerHTML='<b>삼성 인터넷에서 직접 설치하면 기기에 따라 Play Protect 경고가 표시될 수 있습니다.</b><br><br>Chrome에서 이 페이지를 연 뒤<br><b>⋮ → 설치 및 바로가기 만들기 → 앱 설치</b>를 이용해 주세요.';
+ } else if(isAndroid){
+   guideText.innerHTML='이 페이지를 <b>Chrome</b>에서 연 뒤<br><b>⋮ → 설치 및 바로가기 만들기 → 앱 설치</b>를 선택해 주세요.';
+ } else {
+   guideText.innerHTML='Android는 <b>Chrome</b>, iPhone은 <b>Safari</b>에서 이 페이지를 열어 설치해 주세요.';
+ }
+ guide.style.display='flex';
+});
+document.getElementById('guideClose').onclick=()=>guide.style.display='none';
+
+if('serviceWorker' in navigator){
+ navigator.serviceWorker.register('/pungmu-parish-pwa/sw.js',{scope:'/pungmu-parish-pwa/'}).catch(()=>{});
+}
+</script>
+<script type="module">
+import {initializeApp} from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
+import {getMessaging,getToken,isSupported} from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging.js';
+const config={apiKey:'AIzaSyABX1iZ5Kq7zwcr22faMapM5IUhP86amNo',authDomain:'pungmu-parish-pwa.firebaseapp.com',projectId:'pungmu-parish-pwa',storageBucket:'pungmu-parish-pwa.firebasestorage.app',messagingSenderId:'391478026636',appId:'1:391478026636:web:5cc77ea9ce109b565eb6a9'};
+const vapidKey='BNoYNNbya-SKTzuSCHs_qsHMpZW-jrfkssi2Y_JmNEynzfjqqTvBi0vvtYSIUP0WLF4tZTglVBpxdzQIR_61Cs0';
+const iframe=document.getElementById('app');
+const panel=document.getElementById('pushPanel'), pushButton=document.getElementById('pushEnable'), pushStatus=document.getElementById('pushStatus');
+let iframeOrigin=null, appMessageWindow=null;
+window.addEventListener('message',event=>{
+  if(!event.data || event.data.channel!=='PUNGMU_PUSH_V1')return;
+  if(!/^https:\/\/(script\.google\.com|([a-z0-9-]+\.)?googleusercontent\.com)$/.test(event.origin))return;
+  if(event.data.type==='ADMIN_READY'){
+    iframeOrigin=event.origin;appMessageWindow=event.source;panel.hidden=false;
+  }else if(event.data.type==='ADMIN_LOGOUT'){
+    panel.hidden=true;iframeOrigin=null;appMessageWindow=null;
+  }else if(event.data.type==='SAVE_RESULT'){
+    if(event.source!==appMessageWindow)return;
+    pushStatus.textContent=event.data.ok?'관리자 기기 등록 완료':'등록 실패: '+String(event.data.message||'확인 필요');
+  }
+});
+pushButton.addEventListener('click',async()=>{
+ try{
+  pushButton.disabled=true;pushStatus.textContent='푸시 토큰 발급 중…';
+  if(!iframeOrigin||!appMessageWindow)throw Error('관리자 로그인 화면을 먼저 확인해 주세요.');
+  if(!('Notification' in window)||!('serviceWorker' in navigator)||!(await isSupported()))throw Error('현재 브라우저에서 푸시 알림을 지원하지 않습니다.');
+  const permission=await Notification.requestPermission();
+  if(permission!=='granted')throw Error('알림 권한이 허용되지 않았습니다.');
+  const reg=await navigator.serviceWorker.register('/pungmu-parish-pwa/sw.js',{scope:'/pungmu-parish-pwa/'});
+  const token=await getToken(getMessaging(initializeApp(config)),{vapidKey,serviceWorkerRegistration:reg});
+  if(!token)throw Error('FCM 토큰 발급 실패');
+  appMessageWindow.postMessage({channel:'PUNGMU_PUSH_V1',type:'REGISTER_TOKEN',token},iframeOrigin);
+  pushStatus.textContent='관리자 권한 검증 및 서버 저장 중…';
+ }catch(e){pushStatus.textContent='오류: '+(e.message||e)}finally{pushButton.disabled=false}
+});
+</script>
+</body>
+</html>
