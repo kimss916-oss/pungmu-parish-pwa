@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>풍무동성당 푸시 연결 진단</title>
+<style>body{font-family:system-ui,sans-serif;max-width:650px;margin:30px auto;padding:16px;line-height:1.6}button{padding:13px;border:0;border-radius:9px;background:#276d63;color:white;font-weight:bold}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f3f5f5;padding:14px;border-radius:8px}small{color:#666}</style></head><body>
+<h2>풍무동성당 · 푸시 연결 진단</h2>
+<p>이 페이지는 Firebase 연결을 확인하는 <strong>임시 진단 도구</strong>입니다. 관리자 인증이나 서버 등록은 아직 수행하지 않습니다.</p>
+<p><strong>기존 index.html과 sw.js는 변경하지 않습니다.</strong> GitHub Pages에 이 파일만 별도 추가한 뒤 스마트폰 Chrome에서 열어 테스트하세요.</p>
+<button id="start">알림 허용 및 토큰 발급 테스트</button>
+<pre id="status">대기 중</pre>
+<small>발급된 토큰은 화면에 표시하지 않고 브라우저 내부에서 발급 성공 여부만 확인합니다. 토큰은 서버에 전송하거나 저장하지 않습니다.</small>
+<script type="module">
+import {initializeApp} from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
+import {getMessaging,getToken,isSupported} from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging.js';
+const firebaseConfig={apiKey:'AIzaSyABX1iZ5Kq7zwcr22faMapM5IUhP86amNo',authDomain:'pungmu-parish-pwa.firebaseapp.com',projectId:'pungmu-parish-pwa',storageBucket:'pungmu-parish-pwa.firebasestorage.app',messagingSenderId:'391478026636',appId:'1:391478026636:web:5cc77ea9ce109b565eb6a9'};
+const vapidKey='BNoYNNbya-SKTzuSCHs_qsHMpZW-jrfkssi2Y_JmNEynzfjqqTvBi0vvtYSIUP0WLF4tZTglVBpxdzQIR_61Cs0';
+const status=document.querySelector('#status');
+document.querySelector('#start').addEventListener('click',async()=>{
+ const lines=[];const log=s=>{lines.push(s);status.textContent=lines.join('\n')};
+ try{
+  log('브라우저 지원 확인 중…');
+  if(!('serviceWorker' in navigator)||!('Notification' in window)||!(await isSupported()))throw Error('이 브라우저는 Firebase 웹 푸시를 지원하지 않습니다.');
+  const permission=await Notification.requestPermission();log('알림 권한: '+permission);
+  if(permission!=='granted')return;
+  const registration=await navigator.serviceWorker.register('/pungmu-parish-pwa/sw.js',{scope:'/pungmu-parish-pwa/'});
+  log('기존 Service Worker 등록 확인');
+  const messaging=getMessaging(initializeApp(firebaseConfig));
+  const token=await getToken(messaging,{vapidKey,serviceWorkerRegistration:registration});
+  if(!token)throw Error('FCM 토큰을 발급받지 못했습니다.');
+  log('성공: Firebase FCM 토큰 발급 완료');
+  log('주의: 아직 관리자 계정과 연결되지 않았으며 가입 신청 알림은 발송되지 않습니다.');
+ }catch(e){log('오류: '+(e?.message||String(e)))}
+});
+</script></body></html>
